@@ -2,26 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: #0c0a09;
+    color: #f5ede6;
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Tier-reactive background animations ── */
+@keyframes hot-pulse {
+  0%, 100% { opacity: 0.13; transform: scale(1); }
+  50%       { opacity: 0.28; transform: scale(1.12); }
 }
+@keyframes warm-breathe {
+  0%, 100% { opacity: 0.09; }
+  50%       { opacity: 0.22; }
+}
+@keyframes cold-drift {
+  0%, 100% { opacity: 0.07; transform: translateY(0px); }
+  50%       { opacity: 0.16; transform: translateY(-14px); }
+}
+
+.hot-pulse    { animation: hot-pulse    3.2s ease-in-out infinite; }
+.warm-breathe { animation: warm-breathe 4.8s ease-in-out infinite; }
+.cold-drift   { animation: cold-drift   6.0s ease-in-out infinite; }
+
+/* ── Smooth scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3d2a1e; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5a3a28; }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
 }
