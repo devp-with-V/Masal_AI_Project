@@ -19,7 +19,7 @@ GEMINI_PRO  = "gemini-3.6-flash"
 # OpenRouter free models — `:free` suffix = zero cost, no card
 OR_AUTO     = "openrouter/auto"          # OR smart router — picks best free model
 OR_GEMINI   = "google/gemini-2.0-flash-exp:free"
-OR_LLAMA    = "meta-llama/llama-3.3-70b-instruct:free"
+OR_LLAMA    = "meta-llama/llama-3.1-8b-instruct:free"
 
 PROMPT_VERSION = "analyze v1 / chat v1 / kit v1"
 

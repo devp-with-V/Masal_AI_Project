@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 Tier = Literal["HOT", "WARM", "COLD"]
 Urgency = Literal["high", "medium", "low"]
@@ -38,6 +38,13 @@ class ActionKit(BaseModel):
     whatsapp: str = Field(max_length=600)
     follow_up_title: str
     due_date: str  # ISO date YYYY-MM-DD
+
+    @field_validator('talk_track', 'whatsapp', mode='before')
+    @classmethod
+    def convert_list_to_str(cls, v):
+        if isinstance(v, list):
+            return " ".join(str(x) for x in v)
+        return v
 
 
 class Lead(BaseModel):

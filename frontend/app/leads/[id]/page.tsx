@@ -192,162 +192,168 @@ export default function Detail({ params }: { params: { id: string } }) {
       )}
 
       {/* ── Scrollable content ── */}
-      <div className="relative z-10 flex-1 overflow-y-auto">
-        <div className="grid lg:grid-cols-2 gap-4 p-5">
-
-          {/* ── Left column: Analysis ── */}
-          <div className="space-y-4">
-
-            {/* Lead facts */}
-            <Card title="Lead facts" className={t.card}>
-              <p className="text-sm text-stone-300">{lead.requirement} · {lead.budget} · {lead.timeline}</p>
-              <p className={`text-xs mt-1.5 italic ${t.accent}`}>"{lead.message}"</p>
-              <div className="mt-3"><ScoreBar score={a?.score} /></div>
-              {a && (
-                <p className="text-xs text-stone-500 mt-2">{a.reasoning} · urgency{" "}
-                  <span className={t.badge}>{a.urgency}</span>
-                </p>
-              )}
-            </Card>
-
-            {a && (
-              <>
-                {/* Summary & intent */}
-                <Card title="Summary & intent" className={t.card}>
-                  <p className="text-sm text-stone-200 leading-relaxed">{a.summary}</p>
-                  <p className={`text-xs mt-2 ${t.accent}`}>Intent: {a.intent}</p>
-                </Card>
-
-                {/* Key requirements */}
-                <Card title="Key requirements" className={t.card}>
-                  <div className="flex flex-wrap gap-1.5">
-                    {a.key_requirements.map((r) => (
-                      <span key={r} className={`text-xs rounded-full px-2.5 py-0.5 border ${t.chip}`}>
-                        {r}
-                      </span>
-                    ))}
-                  </div>
-                </Card>
-
-                {/* Objections */}
-                {a.objections.length > 0 && (
-                  <Card title="Objections / concerns" className={t.card}>
-                    <ul className="text-sm text-stone-300 list-disc list-inside space-y-1">
-                      {a.objections.map((o) => <li key={o}>{o}</li>)}
-                    </ul>
-                  </Card>
+      <div className="relative z-10 flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row w-full max-w-7xl mx-auto">
+          
+          {/* ── Left column: Analysis (Independently scrollable) ── */}
+          <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
+            <div className="space-y-4 pr-1">
+              {/* Lead facts */}
+              <Card title="Lead facts" className={t.card}>
+                <p className="text-sm text-stone-300">{lead.requirement} · {lead.budget} · {lead.timeline}</p>
+                <p className={`text-xs mt-1.5 italic ${t.accent}`}>"{lead.message}"</p>
+                <div className="mt-3"><ScoreBar score={a?.score} /></div>
+                {a && (
+                  <p className="text-xs text-stone-500 mt-2">{a.reasoning} · urgency{" "}
+                    <span className={t.badge}>{a.urgency}</span>
+                  </p>
                 )}
+              </Card>
 
-                {/* Next action */}
-                <Card title="Recommended next action" className={t.card}>
-                  <p className={`text-sm font-semibold ${t.accent}`}>{a.next_action}</p>
-                </Card>
+              {a && (
+                <>
+                  {/* Summary & intent */}
+                  <Card title="Summary & intent" className={t.card}>
+                    <p className="text-sm text-stone-200 leading-relaxed">{a.summary}</p>
+                    <p className={`text-xs mt-2 ${t.accent}`}>Intent: {a.intent}</p>
+                  </Card>
 
-                {/* Suggested response */}
-                <Card title="Suggested response" className={t.card}>
-                  <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{a.suggested_response}</p>
-                  <div className="mt-3"><CopyButton text={a.suggested_response} /></div>
-                </Card>
-              </>
-            )}
+                  {/* Key requirements */}
+                  <Card title="Key requirements" className={t.card}>
+                    <div className="flex flex-wrap gap-1.5">
+                      {a.key_requirements.map((r) => (
+                        <span key={r} className={`text-xs rounded-full px-2.5 py-0.5 border ${t.chip}`}>
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </Card>
+
+                  {/* Objections */}
+                  {a.objections.length > 0 && (
+                    <Card title="Objections / concerns" className={t.card}>
+                      <ul className="text-sm text-stone-300 list-disc list-inside space-y-1">
+                        {a.objections.map((o) => <li key={o}>{o}</li>)}
+                      </ul>
+                    </Card>
+                  )}
+
+                  {/* Next action */}
+                  <Card title="Recommended next action" className={t.card}>
+                    <p className={`text-sm font-semibold ${t.accent}`}>{a.next_action}</p>
+                  </Card>
+
+                  {/* Suggested response */}
+                  <Card title="Suggested response" className={t.card}>
+                    <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{a.suggested_response}</p>
+                    <div className="mt-3"><CopyButton text={a.suggested_response} /></div>
+                  </Card>
+                </>
+              )}
+            </div>
+            {/* Add padding at bottom for scroll clearance */}
+            <div className="h-8"></div>
           </div>
 
-          {/* ── Right column: Action Kit + Chat ── */}
-          <div className="space-y-4">
-
-            {/* Action Kit */}
-            <Card title="Action Kit — call · WhatsApp · follow-up" className={t.card}>
-              {!lead.action_kit ? (
-                <button
-                  onClick={kit}
-                  disabled={kitLoading || !a}
-                  className={`text-sm font-bold rounded-lg px-5 py-2.5 disabled:opacity-50 transition-colors ${t.btn}`}
-                >
-                  {kitLoading ? "Generating…" : !a ? "Waiting for analysis…" : "Generate Action Kit"}
-                </button>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${t.accent}`}>Talk-track</p>
-                    <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{lead.action_kit.talk_track}</p>
-                  </div>
-                  <div>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${t.accent}`}>WhatsApp</p>
-                    <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{lead.action_kit.whatsapp}</p>
-                    <div className="mt-2"><CopyButton text={lead.action_kit.whatsapp} /></div>
-                  </div>
-                  <div className="text-xs text-stone-500 border-t border-stone-800 pt-3">
-                    Follow-up: <span className={`font-semibold ${t.accent}`}>{lead.action_kit.follow_up_title}</span>
-                    {" "}— due <span className="text-stone-300">{lead.action_kit.due_date}</span>
-                  </div>
+          {/* ── Right column: Action Kit + Chat (Independently scrollable) ── */}
+          <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
+            <div className="space-y-4 pl-0 lg:pl-1">
+              {/* Action Kit */}
+              <Card title="Action Kit — call · WhatsApp · follow-up" className={t.card}>
+                {!lead.action_kit ? (
                   <button
                     onClick={kit}
-                    className={`text-xs border rounded-lg px-3 py-1.5 transition-colors ${t.btnOut}`}
+                    disabled={kitLoading || !a}
+                    className={`text-sm font-bold rounded-lg px-5 py-2.5 disabled:opacity-50 transition-colors ${t.btn}`}
                   >
-                    Regenerate
+                    {kitLoading ? "Generating…" : !a ? "Waiting for analysis…" : "Generate Action Kit"}
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${t.accent}`}>Talk-track</p>
+                      <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{lead.action_kit.talk_track}</p>
+                    </div>
+                    <div>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${t.accent}`}>WhatsApp</p>
+                      <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{lead.action_kit.whatsapp}</p>
+                      <div className="mt-2"><CopyButton text={lead.action_kit.whatsapp} /></div>
+                    </div>
+                    <div className="text-xs text-stone-500 border-t border-stone-800 pt-3">
+                      Follow-up: <span className={`font-semibold ${t.accent}`}>{lead.action_kit.follow_up_title}</span>
+                      {" "}— due <span className="text-stone-300">{lead.action_kit.due_date}</span>
+                    </div>
+                    <button
+                      onClick={kit}
+                      className={`text-xs border rounded-lg px-3 py-1.5 transition-colors ${t.btnOut}`}
+                    >
+                      Regenerate
+                    </button>
+                  </div>
+                )}
+              </Card>
+
+              {/* Grounded chat */}
+              <Card title="Ask about this lead (grounded)" className={t.card}>
+                {/* Quick presets */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {[
+                    "What should I emphasise on the call?",
+                    "Make my reply more assertive",
+                    "What are the red flags?",
+                    "Draft a WhatsApp follow-up",
+                  ].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => ask(p)}
+                      className={`text-[11px] border rounded-full px-2.5 py-1 transition-colors ${t.btnOut}`}
+                    >
+                      {p.length > 28 ? p.slice(0, 27) + "…" : p}
+                    </button>
+                  ))}
+                </div>
+
+                {/* History */}
+                <div className="space-y-2 max-h-56 overflow-y-auto mb-3 pr-1 scrollbar-hide">
+                  {(lead.chat_history || []).map((m, i) => (
+                    <div
+                      key={i}
+                      className={`p-2.5 rounded-lg border text-sm ${
+                        m.role === "user" ? t.chat.user : t.chat.ai
+                      }`}
+                    >
+                      <span className={`text-[9px] font-bold uppercase tracking-widest block mb-1 ${t.accent}`}>
+                        {m.role}
+                      </span>
+                      <p className="text-stone-200 leading-relaxed">{m.text}</p>
+                    </div>
+                  ))}
+                  {!lead.chat_history?.length && (
+                    <p className="text-xs text-stone-600 py-2">No messages yet. Use the presets or type below.</p>
+                  )}
+                </div>
+
+                {/* Input */}
+                <div className="flex gap-2">
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && ask()}
+                    placeholder="Ask anything about this lead…"
+                    className={`flex-1 text-sm border rounded-lg px-3 py-2 focus:outline-none transition-colors ${t.input}`}
+                  />
+                  <button
+                    onClick={() => ask()}
+                    disabled={chatLoading || !q.trim()}
+                    className={`text-sm font-bold rounded-lg px-4 disabled:opacity-50 transition-colors ${t.btn}`}
+                  >
+                    {chatLoading ? "…" : "Ask"}
                   </button>
                 </div>
-              )}
-            </Card>
-
-            {/* Grounded chat */}
-            <Card title="Ask about this lead (grounded)" className={t.card}>
-              {/* Quick presets */}
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {[
-                  "What should I emphasise on the call?",
-                  "Make my reply more assertive",
-                  "What are the red flags?",
-                  "Draft a WhatsApp follow-up",
-                ].map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => ask(p)}
-                    className={`text-[11px] border rounded-full px-2.5 py-1 transition-colors ${t.btnOut}`}
-                  >
-                    {p.length > 28 ? p.slice(0, 27) + "…" : p}
-                  </button>
-                ))}
-              </div>
-
-              {/* History */}
-              <div className="space-y-2 max-h-56 overflow-y-auto mb-3 pr-1">
-                {(lead.chat_history || []).map((m, i) => (
-                  <div
-                    key={i}
-                    className={`p-2.5 rounded-lg border text-sm ${
-                      m.role === "user" ? t.chat.user : t.chat.ai
-                    }`}
-                  >
-                    <span className={`text-[9px] font-bold uppercase tracking-widest block mb-1 ${t.accent}`}>
-                      {m.role}
-                    </span>
-                    <p className="text-stone-200 leading-relaxed">{m.text}</p>
-                  </div>
-                ))}
-                {!lead.chat_history?.length && (
-                  <p className="text-xs text-stone-600 py-2">No messages yet. Use the presets or type below.</p>
-                )}
-              </div>
-
-              {/* Input */}
-              <div className="flex gap-2">
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && ask()}
-                  placeholder="Ask anything about this lead…"
-                  className={`flex-1 text-sm border rounded-lg px-3 py-2 focus:outline-none transition-colors ${t.input}`}
-                />
-                <button
-                  onClick={() => ask()}
-                  disabled={chatLoading || !q.trim()}
-                  className={`text-sm font-bold rounded-lg px-4 disabled:opacity-50 transition-colors ${t.btn}`}
-                >
-                  {chatLoading ? "…" : "Ask"}
-                </button>
-              </div>
-            </Card>
+              </Card>
+            </div>
+            {/* Add padding at bottom for scroll clearance */}
+            <div className="h-8"></div>
           </div>
         </div>
       </div>
