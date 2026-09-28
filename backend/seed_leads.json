@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Rohan Patil",
+    "location": "Pune",
+    "requirement": "2BHK resale near Hinjewadi",
+    "budget": "70-80L",
+    "timeline": "within 2 months, site visit done",
+    "message": "Visited Marvel Zephyr site last week, liked it but worried about loan approval and registration cost. Ready for token if loan clears. Please call tomorrow morning."
+  },
+  {
+    "name": "Sara Khan",
+    "location": "Mumbai",
+    "requirement": "1BHK rental-to-buy in Andheri",
+    "budget": "50-60L",
+    "timeline": "3-6 months, just browsing",
+    "message": "Hi, just checking options for later this year. No urgency, comparing a few projects."
+  },
+  {
+    "name": "Test Query",
+    "location": "Bangalore",
+    "requirement": "Not sure",
+    "budget": "Low",
+    "timeline": "Someday",
+    "message": "hi rates?"
+  }
+]
