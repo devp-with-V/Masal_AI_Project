@@ -58,7 +58,14 @@ def _sort_key(l: Lead):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "has_key": bool(os.getenv("GEMINI_API_KEY")), "leads": len(STORE)}
+    return {
+        "ok": True,
+        "providers": {
+            "gemini": bool(os.getenv("GEMINI_API_KEY")),
+            "openrouter": bool(os.getenv("OPENROUTER_API_KEY")),
+        },
+        "leads": len(STORE),
+    }
 
 
 @app.get("/health")
@@ -68,9 +75,10 @@ def root_health():
 
 @app.post("/api/analyze", response_model=Lead)
 def create_lead(data: LeadIn, request: Request):
-    model_choice = request.headers.get("x-model-select", "auto")
+    provider_choice = request.headers.get("x-provider-select", "auto")
+    model_choice    = request.headers.get("x-model-select", "auto")
     try:
-        analysis = analyze_lead(data, model_choice)
+        analysis = analyze_lead(data, provider_choice, model_choice)
     except RuntimeError as e:
         raise HTTPException(500, f"AI config error: {e}")
     except Exception as e:
@@ -98,12 +106,13 @@ def get_lead(lead_id: str):
 
 @app.post("/api/leads/{lead_id}/chat", response_model=ChatRes)
 def chat(lead_id: str, body: ChatReq, request: Request):
-    model_choice = request.headers.get("x-model-select", "auto")
+    provider_choice = request.headers.get("x-provider-select", "auto")
+    model_choice    = request.headers.get("x-model-select", "auto")
     lead = STORE.get(lead_id)
     if not lead:
         raise HTTPException(404, "Lead not found")
     try:
-        answer = chat_with_lead(lead, body.question, model_choice)
+        answer = chat_with_lead(lead, body.question, provider_choice, model_choice)
     except RuntimeError as e:
         raise HTTPException(500, f"AI config error: {e}")
     except Exception as e:
@@ -115,14 +124,15 @@ def chat(lead_id: str, body: ChatReq, request: Request):
 
 @app.post("/api/leads/{lead_id}/action-kit", response_model=ActionKit)
 def action_kit(lead_id: str, request: Request):
-    model_choice = request.headers.get("x-model-select", "auto")
+    provider_choice = request.headers.get("x-provider-select", "auto")
+    model_choice    = request.headers.get("x-model-select", "auto")
     lead = STORE.get(lead_id)
     if not lead:
         raise HTTPException(404, "Lead not found")
     if not lead.analysis:
         raise HTTPException(400, "Lead has no analysis yet")
     try:
-        kit = generate_action_kit(lead, model_choice)
+        kit = generate_action_kit(lead, provider_choice, model_choice)
     except RuntimeError as e:
         raise HTTPException(500, f"AI config error: {e}")
     except Exception as e:

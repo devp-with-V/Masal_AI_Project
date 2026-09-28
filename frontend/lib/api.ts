@@ -47,10 +47,16 @@ export interface LeadIn {
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const model = typeof localStorage !== "undefined" ? localStorage.getItem("masal-model") || "auto" : "auto";
+  const stored = typeof localStorage !== "undefined" ? localStorage.getItem("masal-selection") || "auto|auto" : "auto|auto";
+  const [provider, model] = stored.includes("|") ? stored.split("|") : ["auto", stored];
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", "X-Model-Select": model, ...(init?.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Provider-Select": provider,
+      "X-Model-Select": model,
+      ...(init?.headers || {}),
+    },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -60,7 +66,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  health: () => req<{ ok: boolean; has_key: boolean; leads: number }>("/api/health"),
+  health: () => req<{ ok: boolean; providers: { gemini: boolean; openrouter: boolean }; leads: number }>("/api/health"),
   analyze: (data: LeadIn) =>
     req<Lead>("/api/analyze", { method: "POST", body: JSON.stringify(data) }),
   list: () => req<Lead[]>("/api/leads?sort=score"),

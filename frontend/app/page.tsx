@@ -13,7 +13,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [warming, setWarming] = useState(true);
   const [error, setError] = useState("");
-  const [model, setModel] = useState("auto");
+  const [selection, setSelection] = useState("auto|auto");
 
   const load = async () => {
     try {
@@ -30,7 +30,7 @@ export default function Home() {
     if (typeof window !== "undefined" && window.location.search.includes("refreshed=true")) {
       setError("List refreshed: The backend restarted and old leads were cleared.");
     }
-    setModel(localStorage.getItem("masal-model") || "auto");
+    setSelection(localStorage.getItem("masal-selection") || "auto|auto");
     load();
     api.health().catch(() => {});
   }, []);
@@ -64,19 +64,31 @@ export default function Home() {
           <p className="text-xs text-gray-500">Scan who matters, what they want, what to do next.</p>
         </div>
         <div className="flex items-center gap-4">
-          <select
-            className="text-xs border rounded-md px-2 py-1 bg-white cursor-pointer"
-            value={model}
-            onChange={(e) => {
-              const val = e.target.value;
-              setModel(val);
-              localStorage.setItem("masal-model", val);
-            }}
-          >
-            <option value="auto">Auto (Fallback Chain)</option>
-            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
-            <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
-          </select>
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[10px] text-gray-400 uppercase tracking-wide">AI Provider / Model</label>
+            <select
+              className="text-xs border rounded-md px-2 py-1 bg-white cursor-pointer min-w-[220px]"
+              value={selection}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelection(val);
+                localStorage.setItem("masal-selection", val);
+              }}
+            >
+              <optgroup label="🤖 Auto (best available free)">
+                <option value="auto|auto">Auto — try all providers in order</option>
+              </optgroup>
+              <optgroup label="⚡ Gemini — Google AI Studio (20 req/day)">
+                <option value="gemini|gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                <option value="gemini|gemini-3.6-flash">Gemini 3.6 Flash</option>
+              </optgroup>
+              <optgroup label="🔀 OpenRouter — free tier (50–1000 req/day)">
+                <option value="openrouter|openrouter/auto">OpenRouter Auto (smart free router)</option>
+                <option value="openrouter|google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash Exp (via OR)</option>
+                <option value="openrouter|meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (via OR)</option>
+              </optgroup>
+            </select>
+          </div>
           <span className="text-xs text-gray-500">{warming ? "warming backend…" : `${leads.length} leads`}</span>
         </div>
       </header>
