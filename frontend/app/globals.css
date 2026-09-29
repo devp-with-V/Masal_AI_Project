@@ -29,11 +29,43 @@
 .warm-breathe { animation: warm-breathe 4.8s ease-in-out infinite; }
 .cold-drift   { animation: cold-drift   6.0s ease-in-out infinite; }
 
+@keyframes float-1 {
+  0%, 100% { transform: translateY(0px) rotate(-6deg); }
+  50% { transform: translateY(-12px) rotate(-5deg); }
+}
+@keyframes float-2 {
+  0%, 100% { transform: translateY(0px) rotate(2deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+@keyframes float-3 {
+  0%, 100% { transform: translateY(0px) rotate(8deg); }
+  50% { transform: translateY(-10px) rotate(9deg); }
+}
+.animate-float-1 { animation: float-1 6s ease-in-out infinite; }
+.animate-float-2 { animation: float-2 7.5s ease-in-out infinite 1s; }
+.animate-float-3 { animation: float-3 5.5s ease-in-out infinite 2s; }
+
 /* ── Smooth scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #3d2a1e; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #5a3a28; }
+
+@keyframes translateX {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
