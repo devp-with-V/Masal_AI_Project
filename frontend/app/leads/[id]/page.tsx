@@ -238,7 +238,7 @@ export default function Detail({ params }: { params: { id: string } }) {
               {/* Lead facts */}
               <Card title="Lead facts" className={t.card}>
                 <p className="text-sm text-stone-300">{lead.requirement} · {lead.budget} · {lead.timeline}</p>
-                <p className={`text-xs mt-1.5 italic ${t.accent}`}>"{lead.message}"</p>
+                <p className={`text-xs mt-1.5 italic ${t.accent}`}>&ldquo;{lead.message}&rdquo;</p>
                 <div className="mt-3"><ScoreBar score={a?.score} /></div>
                 {a && (
                   <p className="text-xs text-stone-500 mt-2">{a.reasoning} · urgency{" "}

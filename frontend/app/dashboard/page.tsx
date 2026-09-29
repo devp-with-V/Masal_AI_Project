@@ -369,7 +369,7 @@ export default function Dashboard() {
             <div className="bg-stone-950 border border-stone-800 p-3 rounded-lg mb-4">
               <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-1">Previous closing comment</p>
               <p className="text-sm text-stone-300 italic">
-                "{leads.find(l => l.id === reopenLeadId)?.close_reason}"
+                &ldquo;{leads.find(l => l.id === reopenLeadId)?.close_reason}&rdquo;
               </p>
             </div>
 
