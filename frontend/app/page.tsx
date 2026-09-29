@@ -203,7 +203,7 @@ export default function Landing() {
                   body: "Every lead gets a 0–100 score with deterministic guardrails. Act on priority — not inbox order.",
                   color: "border-stone-800 bg-stone-900/40",
                 },
-              ].map((f, i) => (
+              ].map((f) => (
                 <div key={f.title + arrayIndex} className={`w-[350px] shrink-0 border rounded-2xl p-7 transition-all hover:scale-[1.02] ${f.color}`}>
                   <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest mb-2">{f.sub}</p>
                   <h3 className="font-bold text-lg text-stone-100 mb-3">{f.title}</h3>
