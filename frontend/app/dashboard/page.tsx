@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
+import Draggable from "react-draggable";
 import { ScoreBar, TierPill } from "@/components/ui";
 import { api, cache, type Lead, type LeadIn } from "@/lib/api";
 
@@ -14,7 +15,6 @@ export default function Dashboard() {
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [warming, setWarming] = useState(true);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [selection, setSelection] = useState("auto|auto");
@@ -24,6 +24,10 @@ export default function Dashboard() {
   const [reopening, setReopening] = useState(false);
   const [briefing, setBriefing] = useState("");
   const [briefingLoading, setBriefingLoading] = useState(false);
+  const [briefingMinimized, setBriefingMinimized] = useState(false);
+  const [warming, setWarming] = useState(false);
+  const [warmingCountdown, setWarmingCountdown] = useState(50);
+  const [warmingSuccess, setWarmingSuccess] = useState(false);
 
   const aiMenuRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +46,32 @@ export default function Dashboard() {
     }
   };
 
+  const handleBriefing = async () => {
+    if (briefing) {
+      setBriefing("");
+      localStorage.removeItem("masal-briefing");
+      return;
+    }
+    setBriefingLoading(true);
+    try {
+      const res = await api.briefing();
+      setBriefing(res.briefing);
+      localStorage.setItem("masal-briefing", res.briefing);
+      localStorage.setItem("masal-briefing-date", new Date().toDateString());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Briefing failed");
+    } finally {
+      setBriefingLoading(false);
+    }
+  };
+
   const load = async () => {
+    let isSlow = false;
+    const slowTimer = setTimeout(() => {
+      isSlow = true;
+      setWarming(true);
+    }, 1000);
+
     try {
       const data = await api.list();
       setLeads(data);
@@ -50,12 +79,38 @@ export default function Dashboard() {
     } catch {
       setLeads(cache.load());
     } finally {
-      setWarming(false);
+      clearTimeout(slowTimer);
+      if (isSlow) {
+        setWarmingSuccess(true);
+        setTimeout(() => {
+          setWarming(false);
+          setWarmingSuccess(false);
+          setWarmingCountdown(50);
+        }, 1500);
+      }
     }
   };
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (warming && !warmingSuccess && warmingCountdown > 0) {
+      timer = setInterval(() => {
+        setWarmingCountdown((p) => p - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [warming, warmingSuccess, warmingCountdown]);
+
+  useEffect(() => {
     setSelection(localStorage.getItem("masal-selection") || "auto|auto");
+    const cachedBriefing = localStorage.getItem("masal-briefing");
+    const cachedDate = localStorage.getItem("masal-briefing-date");
+    if (cachedBriefing && cachedDate === new Date().toDateString()) {
+      setBriefing(cachedBriefing);
+    } else {
+      localStorage.removeItem("masal-briefing");
+      localStorage.removeItem("masal-briefing-date");
+    }
     load();
     api.health().catch(() => {});
     
@@ -112,21 +167,7 @@ export default function Dashboard() {
   const set = (k: keyof LeadIn) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const handleBriefing = async () => {
-    if (briefing) {
-      setBriefing("");
-      return;
-    }
-    setBriefingLoading(true);
-    try {
-      const res = await api.briefing();
-      setBriefing(res.briefing);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Briefing failed");
-    } finally {
-      setBriefingLoading(false);
-    }
-  };
+
 
   const aiOptions = [
     { label: "🤖 Auto (best available free)", opts: [{ val: "auto|auto", text: "Auto — try all providers" }] },
@@ -150,11 +191,7 @@ export default function Dashboard() {
         {/* Centre: count pill + briefing btn */}
         <div className="flex items-center gap-4">
           <div className="text-sm font-medium text-stone-400 bg-stone-900/50 px-4 py-1.5 rounded-full border border-stone-800">
-            {warming ? (
-              <span className="animate-pulse">Warming backend…</span>
-            ) : (
-              <span>Total Leads: <span className="text-stone-200">{leads.length}</span></span>
-            )}
+            <span>Total Leads: <span className="text-stone-200">{leads.length}</span></span>
           </div>
           
           <button
@@ -208,38 +245,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* ── Briefing Panel ── */}
-      {briefing && (
-        <div className="flex-shrink-0 bg-amber-950/20 border-b border-amber-900/40 p-6 shadow-inner">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-amber-400 font-bold text-sm tracking-widest uppercase mb-3 flex items-center gap-2">
-              <span>☀️</span> Morning Briefing
-            </h2>
-            <div className="text-stone-300 text-sm leading-relaxed max-w-4xl">
-              <ul className="list-disc pl-5 marker:text-amber-700/50 space-y-2">
-                {briefing.split('\n').map((line, i) => {
-                  if (!line.trim()) return null;
-                  const isBullet = line.trim().startsWith('* ') || line.trim().startsWith('- ');
-                  const content = line.replace(/^[\*\-]\s+/, '');
-                  
-                  const parts = content.split(/(\*\*.*?\*\*)/g).map((part, j) => {
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                      return <strong key={j} className="text-amber-100 font-bold">{part.slice(2, -2)}</strong>;
-                    }
-                    return part;
-                  });
 
-                  if (isBullet) {
-                    return <li key={i}>{parts}</li>;
-                  }
-                  // For the motivational line or non-bullet lines
-                  return <div key={i} className="mt-4 font-medium italic text-amber-200/80 -ml-5">{parts}</div>;
-                })}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Main Layout ── */}
       <div className="flex-1 flex overflow-hidden max-w-7xl mx-auto w-full p-6 gap-6">
@@ -461,6 +467,110 @@ export default function Dashboard() {
                 {reopening ? "Re-analyzing..." : "Yes, Re-analyze"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Minimized Briefing Dock (Bottom Left) ── */}
+      {briefing && briefingMinimized && (
+        <div 
+          onClick={() => setBriefingMinimized(false)}
+          className="fixed bottom-6 left-6 z-50 bg-stone-900 border border-amber-900/50 rounded-full px-5 py-3 shadow-2xl cursor-pointer hover:bg-amber-950/80 transition-all hover:scale-105 flex items-center gap-3 animate-bounce"
+        >
+          <span className="text-amber-400 font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+            <span>☀️</span> Morning Briefing
+          </span>
+          <span className="text-amber-500 font-bold text-lg leading-none mt-[-2px]">+</span>
+        </div>
+      )}
+
+      {/* ── Draggable Briefing Window ── */}
+      {briefing && !briefingMinimized && (
+        <Draggable handle=".drag-handle">
+          <div className="fixed bottom-24 right-12 w-full max-w-sm sm:max-w-md bg-stone-900 border border-amber-900/50 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden">
+            {/* Header (Drag Handle) */}
+            <div className="drag-handle bg-amber-950/80 hover:bg-amber-900 flex items-center justify-between px-4 py-3 cursor-grab active:cursor-grabbing border-b border-amber-900/50 transition-colors">
+              <h2 className="text-amber-400 font-bold text-sm tracking-widest uppercase flex items-center gap-2">
+                <span>☀️</span> Morning Briefing
+              </h2>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setBriefingMinimized(true); }}
+                  className="text-amber-500 hover:text-amber-300 transition-colors font-bold text-lg leading-none mt-[-4px]"
+                  title="Minimize"
+                >
+                  −
+                </button>
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setBriefing(""); 
+                    localStorage.removeItem("masal-briefing"); 
+                    localStorage.removeItem("masal-briefing-date");
+                  }}
+                  className="text-amber-500 hover:text-amber-300 transition-colors font-bold text-xl leading-none mt-[-2px]"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-5 max-h-[60vh] overflow-y-auto scrollbar-hide bg-stone-900 cursor-auto">
+              <div className="text-stone-300 text-sm leading-relaxed">
+                <ul className="list-disc pl-5 marker:text-amber-700/50 space-y-2">
+                  {briefing.split('\n').map((line, i) => {
+                    if (!line.trim()) return null;
+                    const isBullet = line.trim().startsWith('* ') || line.trim().startsWith('- ');
+                    const content = line.replace(/^[\*\-]\s+/, '');
+                    
+                    const parts = content.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+                      if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={j} className="text-amber-100 font-bold">{part.slice(2, -2)}</strong>;
+                      }
+                      return part;
+                    });
+
+                    if (isBullet) {
+                      return <li key={i}>{parts}</li>;
+                    }
+                    return <div key={i} className="mt-4 font-medium italic text-amber-200/80 -ml-5">{parts}</div>;
+                  })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </Draggable>
+      )}
+
+      {/* ── Fullscreen Warming Backend Overlay ── */}
+      {warming && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/80 backdrop-blur-md">
+          <div className="bg-stone-900 border border-stone-800 rounded-3xl p-10 shadow-2xl flex flex-col items-center text-center max-w-sm">
+            {warmingSuccess ? (
+              <>
+                <div className="w-16 h-16 bg-green-900/30 border border-green-500 rounded-full flex items-center justify-center mb-6">
+                  <span className="text-green-500 text-3xl">✓</span>
+                </div>
+                <h2 className="text-2xl font-black text-stone-100 mb-2">Connected!</h2>
+                <p className="text-stone-400">Loading your dashboard...</p>
+              </>
+            ) : (
+              <>
+                <div className="relative w-16 h-16 mb-6">
+                  <div className="absolute inset-0 border-4 border-stone-800 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-red-600 rounded-full border-t-transparent animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-stone-300">
+                    {warmingCountdown}s
+                  </div>
+                </div>
+                <h2 className="text-xl font-bold text-stone-100 mb-3">Waking up backend</h2>
+                <p className="text-sm text-stone-400 leading-relaxed">
+                  The free tier server is spinning up. It usually takes around 50 seconds. Thanks for your patience!
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
