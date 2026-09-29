@@ -53,6 +53,8 @@ class Lead(BaseModel):
     chat_history: list[ChatMsg] = []
     action_kit: Optional[ActionKit] = None
     analysis: Optional[Analysis] = None
+    closed: bool = False
+    close_reason: Optional[str] = None
     # LeadIn fields flattened
     name: str
     location: str

@@ -35,6 +35,8 @@ export interface Lead {
   analysis: Analysis | null;
   chat_history?: { role: string; text: string }[];
   action_kit?: ActionKit | null;
+  closed?: boolean;
+  close_reason?: string;
 }
 
 export interface LeadIn {
@@ -77,6 +79,8 @@ export const api = {
       body: JSON.stringify({ question }),
     }),
   kit: (id: string) => req<ActionKit>(`/api/leads/${id}/action-kit`, { method: "POST" }),
+  close: (id: string, reason: string) => req<Lead>(`/api/leads/${id}/close`, { method: "POST", body: JSON.stringify({ reason }) }),
+  reopen: (id: string, update: string) => req<Lead>(`/api/leads/${id}/reopen`, { method: "POST", body: JSON.stringify({ update }) }),
 };
 
 const LS_KEY = "masal-leads-v1";

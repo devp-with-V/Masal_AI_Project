@@ -141,6 +141,63 @@ def action_kit(lead_id: str, request: Request):
     return kit
 
 
+from pydantic import BaseModel
+class CloseReq(BaseModel):
+    reason: str
+
+@app.post("/api/leads/{lead_id}/close", response_model=Lead)
+def close_lead(lead_id: str, body: CloseReq):
+    if lead_id not in STORE:
+        raise HTTPException(404, "Lead not found")
+    STORE[lead_id].closed = True
+    STORE[lead_id].close_reason = body.reason
+    return STORE[lead_id]
+
+
+class ReopenReq(BaseModel):
+    update: str
+
+@app.post("/api/leads/{lead_id}/reopen", response_model=Lead)
+def reopen_lead(lead_id: str, body: ReopenReq, request: Request):
+    if lead_id not in STORE:
+        raise HTTPException(404, "Lead not found")
+    
+    lead = STORE[lead_id]
+    # Append the new update to the message
+    lead.message = f"{lead.message}\n\n[UPDATE - REOPENED]: {body.update}"
+    
+    # Re-analyze
+    provider_choice = request.headers.get("x-provider-select", "auto")
+    model_choice    = request.headers.get("x-model-select", "auto")
+    
+    # Construct a LeadIn object for the analyze_lead function
+    lead_in = LeadIn(
+        name=lead.name,
+        location=lead.location,
+        requirement=lead.requirement,
+        budget=lead.budget,
+        timeline=lead.timeline,
+        message=lead.message
+    )
+    
+    try:
+        new_analysis = analyze_lead(lead_in, provider_choice, model_choice)
+    except RuntimeError as e:
+        raise HTTPException(500, f"AI config error: {e}")
+    except Exception as e:
+        raise HTTPException(502, f"AI call failed: {str(e)[:300]}")
+        
+    lead.analysis = new_analysis
+    lead.closed = False
+    lead.close_reason = None
+    
+    # Also invalidate the action kit so they have to generate a new one based on the new context
+    lead.action_kit = None
+    
+    return lead
+
+
+
 @app.on_event("startup")
 def load_seeds():
     """Load seeds instantly; analyze in background so boot never blocks."""

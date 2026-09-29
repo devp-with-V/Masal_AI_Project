@@ -16,12 +16,29 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [warming, setWarming] = useState(true);
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [selection, setSelection] = useState("auto|auto");
   const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const [reopenLeadId, setReopenLeadId] = useState<string | null>(null);
+  const [reopenUpdate, setReopenUpdate] = useState("");
+  const [reopening, setReopening] = useState(false);
 
   const aiMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleReopen = async () => {
+    if (!reopenLeadId || !reopenUpdate.trim()) return;
+    setReopening(true);
+    try {
+      await api.reopen(reopenLeadId, reopenUpdate);
+      setReopenLeadId(null);
+      setReopenUpdate("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reopen failed");
+    } finally {
+      setReopening(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -36,9 +53,6 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search.includes("refreshed=true")) {
-      setInfo("List refreshed — the backend restarted and old leads were cleared.");
-    }
     setSelection(localStorage.getItem("masal-selection") || "auto|auto");
     load();
     api.health().catch(() => {});
@@ -77,13 +91,20 @@ export default function Dashboard() {
     COLD: leads.filter((l) => l.analysis?.tier === "COLD").length,
   };
 
-  const shown = leads.filter((l) => {
+  let shown = leads.filter((l) => {
     if (filter !== "ALL" && l.analysis?.tier !== filter) return false;
     if (search.trim()) {
       const q = search.toLowerCase();
       if (!l.name.toLowerCase().includes(q) && !l.location.toLowerCase().includes(q)) return false;
     }
     return true;
+  });
+
+  // Sort: active leads first, closed leads at the bottom
+  shown = shown.sort((a, b) => {
+    if (a.closed && !b.closed) return 1;
+    if (!a.closed && b.closed) return -1;
+    return 0; // maintain backend sorting for ties
   });
 
   const set = (k: keyof LeadIn) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -164,12 +185,6 @@ export default function Dashboard() {
         <div className="w-[350px] lg:w-[400px] flex-shrink-0 flex flex-col overflow-y-auto scrollbar-hide pr-2">
           
           {/* Notifications */}
-          {info && (
-            <div className="mb-4 bg-amber-950/60 border border-amber-900/60 text-amber-300 text-xs rounded-xl p-3 flex justify-between items-center">
-              {info}
-              <button onClick={() => setInfo("")} className="ml-3 text-amber-500 hover:text-amber-300 font-bold">✕</button>
-            </div>
-          )}
           {error && (
             <div className="mb-4 bg-red-950/60 border border-red-900/60 text-red-300 text-xs rounded-xl p-3 flex justify-between items-center">
               {error}
@@ -263,6 +278,35 @@ export default function Dashboard() {
             <div className="grid gap-4">
               {shown.map((l) => {
                 const tier = l.analysis?.tier;
+                
+                if (l.closed) {
+                  return (
+                    <div
+                      key={l.id}
+                      onClick={() => setReopenLeadId(l.id)}
+                      className="group block bg-stone-950 border border-stone-800/50 rounded-2xl p-5 transition-all hover:bg-stone-900 cursor-pointer grayscale opacity-70"
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <span className="font-bold text-stone-500 text-base line-through">{l.name}</span>
+                          <span className="text-stone-600 text-sm"> · {l.location} · {l.budget}</span>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-stone-900 text-stone-500 border-stone-800 uppercase">
+                          CLOSED
+                        </span>
+                      </div>
+                      <p className="text-sm text-stone-500 line-clamp-2 mb-4 leading-relaxed italic">
+                        Closing comment: {l.close_reason}
+                      </p>
+                      <div className="mt-3 pt-3 border-t border-stone-800/30 flex items-center justify-between text-stone-600">
+                        <span className="text-[11px] font-medium tracking-wide uppercase">
+                          Click to reopen
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
                 const borderHover =
                   tier === "HOT"  ? "hover:border-red-900/70"
                   : tier === "WARM" ? "hover:border-amber-900/70"
@@ -315,6 +359,49 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Reopen Lead Modal ── */}
+      {reopenLeadId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-2xl w-full max-w-md">
+            <h2 className="text-lg font-bold text-stone-100 mb-2">Is this lead active again?</h2>
+            
+            <div className="bg-stone-950 border border-stone-800 p-3 rounded-lg mb-4">
+              <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mb-1">Previous closing comment</p>
+              <p className="text-sm text-stone-300 italic">
+                "{leads.find(l => l.id === reopenLeadId)?.close_reason}"
+              </p>
+            </div>
+
+            <p className="text-sm text-stone-400 mb-4">
+              If they replied or things have changed, log the new updates here. The AI will re-analyze their status based on this new info.
+            </p>
+            <textarea
+              value={reopenUpdate}
+              onChange={(e) => setReopenUpdate(e.target.value)}
+              placeholder="e.g. They just called back and increased their budget to 90L..."
+              rows={4}
+              className="w-full text-sm bg-stone-950 border border-stone-800 rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 focus:outline-none focus:border-red-800 transition-colors resize-none mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setReopenLeadId(null); setReopenUpdate(""); }}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-stone-400 hover:text-stone-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReopen}
+                disabled={reopening || !reopenUpdate.trim()}
+                className="bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-red-900/30 transition-colors"
+              >
+                {reopening ? "Re-analyzing..." : "Yes, Re-analyze"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

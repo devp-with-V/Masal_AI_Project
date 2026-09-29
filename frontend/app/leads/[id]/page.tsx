@@ -6,7 +6,26 @@ import { Card, CopyButton, ScoreBar, TierPill } from "@/components/ui";
 import { api, type Lead, type Tier } from "@/lib/api";
 
 /* ── Per-tier design tokens ──────────────────────────────────── */
-function theme(tier: Tier | null | undefined) {
+function theme(tier: Tier | null | undefined, closed?: boolean) {
+  if (closed) {
+    return {
+      bg:       "bg-stone-950",
+      header:   "bg-stone-900/40 border-stone-800 backdrop-blur-md grayscale opacity-80",
+      card:     "bg-stone-900/30 border-stone-800 grayscale opacity-80",
+      accent:   "text-stone-500",
+      chip:     "bg-stone-900 border-stone-800 text-stone-500",
+      btn:      "bg-stone-800 text-stone-500 cursor-not-allowed",
+      btnOut:   "border-stone-800 text-stone-500 cursor-not-allowed",
+      chat:     { user: "bg-stone-900 border-stone-800", ai: "bg-stone-900/50 border-stone-800" },
+      pulse:    "",
+      blob:     "bg-transparent",
+      label:    "CLOSED",
+      labelCls: "bg-stone-900 text-stone-500 border-stone-800",
+      input:    "bg-stone-900 border-stone-800 text-stone-500 placeholder-stone-700",
+      badge:    "text-stone-500",
+    };
+  }
+
   switch (tier) {
     case "HOT":
       return {
@@ -133,8 +152,26 @@ export default function Detail({ params }: { params: { id: string } }) {
     }
   };
 
+  const [closeModal, setCloseModal] = useState(false);
+  const [closeReason, setCloseReason] = useState("");
+  const [closing, setClosing] = useState(false);
+
+  const handleCloseLead = async () => {
+    if (!closeReason.trim()) return;
+    setClosing(true);
+    try {
+      await api.close(id, closeReason);
+      setCloseModal(false);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to close lead");
+    } finally {
+      setClosing(false);
+    }
+  };
+
   const tier = lead?.analysis?.tier;
-  const t = theme(tier);
+  const t = theme(tier, lead?.closed);
   const a = lead?.analysis;
 
   /* Loading / error fallback */
@@ -351,12 +388,56 @@ export default function Detail({ params }: { params: { id: string } }) {
                   </button>
                 </div>
               </Card>
+
+              {/* ── Close Lead Section ── */}
+              {!lead.closed && (
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => setCloseModal(true)}
+                    className="text-xs font-bold px-4 py-2 rounded-lg border border-stone-800 text-stone-500 hover:text-red-400 hover:border-red-900/50 hover:bg-red-950/20 transition-all"
+                  >
+                    Close Lead
+                  </button>
+                </div>
+              )}
             </div>
             {/* Add padding at bottom for scroll clearance */}
             <div className="h-8"></div>
           </div>
         </div>
       </div>
+
+      {/* ── Close Lead Modal ── */}
+      {closeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 shadow-2xl w-full max-w-md">
+            <h2 className="text-lg font-bold text-stone-100 mb-2">Close Lead?</h2>
+            <p className="text-sm text-stone-400 mb-4">Are you sure you want to close this lead? Please add a comment about the client outcome.</p>
+            <textarea
+              value={closeReason}
+              onChange={(e) => setCloseReason(e.target.value)}
+              placeholder="e.g. Client bought a different property..."
+              rows={3}
+              className="w-full text-sm bg-stone-950 border border-stone-800 rounded-xl px-4 py-3 text-stone-200 placeholder-stone-600 focus:outline-none focus:border-red-800 transition-colors resize-none mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setCloseModal(false); setCloseReason(""); }}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-stone-400 hover:text-stone-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCloseLead}
+                disabled={closing || !closeReason.trim()}
+                className="bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-red-900/30 transition-colors"
+              >
+                {closing ? "Saving..." : "Save & Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
