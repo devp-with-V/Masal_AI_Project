@@ -27,6 +27,7 @@ export interface Lead {
   id: string;
   created_at: string;
   name: string;
+  phone?: string;
   location: string;
   requirement: string;
   budget: string;
@@ -41,6 +42,7 @@ export interface Lead {
 
 export interface LeadIn {
   name: string;
+  phone?: string;
   location: string;
   requirement: string;
   budget: string;

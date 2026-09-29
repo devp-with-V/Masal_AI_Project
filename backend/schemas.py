@@ -8,6 +8,7 @@ Urgency = Literal["high", "medium", "low"]
 
 class LeadIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+    phone: Optional[str] = Field(default=None, max_length=50)
     location: str = Field(min_length=1, max_length=200)
     requirement: str = Field(min_length=1, max_length=200)
     budget: str = Field(min_length=1, max_length=200)
@@ -57,6 +58,7 @@ class Lead(BaseModel):
     close_reason: Optional[str] = None
     # LeadIn fields flattened
     name: str
+    phone: Optional[str] = None
     location: str
     requirement: str
     budget: str

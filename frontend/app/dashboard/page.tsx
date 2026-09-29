@@ -5,7 +5,7 @@ import { ScoreBar, TierPill } from "@/components/ui";
 import { api, cache, type Lead, type LeadIn } from "@/lib/api";
 
 const EMPTY: LeadIn = {
-  name: "", location: "", requirement: "", budget: "", timeline: "", message: "",
+  name: "", phone: "", location: "", requirement: "", budget: "", timeline: "", message: "",
 };
 
 export default function Dashboard() {
@@ -207,12 +207,12 @@ export default function Dashboard() {
             <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md mb-6">
               <h2 className="text-sm font-bold text-stone-200 mb-4">Add Lead Details</h2>
               <form onSubmit={submit} className="flex flex-col gap-4">
-                {(["name", "location", "requirement", "budget", "timeline"] as const).map((k) => (
+                {(["name", "phone", "location", "requirement", "budget", "timeline"] as const).map((k) => (
                   <input
                     key={k}
-                    required
-                    placeholder={k[0].toUpperCase() + k.slice(1)}
-                    value={form[k]}
+                    required={k !== "phone"}
+                    placeholder={k[0].toUpperCase() + k.slice(1) + (k === "phone" ? " (Optional)" : "")}
+                    value={form[k] || ""}
                     onChange={set(k)}
                     className="text-sm bg-stone-950 border border-stone-800 rounded-xl px-4 py-2.5 text-stone-100 placeholder-stone-600 focus:outline-none focus:border-red-800 transition-colors"
                   />

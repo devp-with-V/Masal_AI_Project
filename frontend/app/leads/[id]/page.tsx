@@ -314,7 +314,19 @@ export default function Detail({ params }: { params: { id: string } }) {
                     <div>
                       <p className={`text-[10px] font-bold uppercase tracking-widest mb-1.5 ${t.accent}`}>WhatsApp</p>
                       <p className="text-sm text-stone-300 whitespace-pre-wrap leading-relaxed">{lead.action_kit.whatsapp}</p>
-                      <div className="mt-2"><CopyButton text={lead.action_kit.whatsapp} /></div>
+                      <div className="mt-2 flex gap-2">
+                        <CopyButton text={lead.action_kit.whatsapp} />
+                        {lead.phone && (
+                          <a
+                            href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(lead.action_kit.whatsapp)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-md border border-green-900/50 text-green-400 bg-green-950/20 hover:bg-green-900/40 transition-colors"
+                          >
+                            Send via WhatsApp ↗
+                          </a>
+                        )}
+                      </div>
                     </div>
                     <div className="text-xs text-stone-500 border-t border-stone-800 pt-3">
                       Follow-up: <span className={`font-semibold ${t.accent}`}>{lead.action_kit.follow_up_title}</span>
