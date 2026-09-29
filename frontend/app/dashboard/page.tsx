@@ -22,6 +22,8 @@ export default function Dashboard() {
   const [reopenLeadId, setReopenLeadId] = useState<string | null>(null);
   const [reopenUpdate, setReopenUpdate] = useState("");
   const [reopening, setReopening] = useState(false);
+  const [briefing, setBriefing] = useState("");
+  const [briefingLoading, setBriefingLoading] = useState(false);
 
   const aiMenuRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +112,22 @@ export default function Dashboard() {
   const set = (k: keyof LeadIn) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  const handleBriefing = async () => {
+    if (briefing) {
+      setBriefing("");
+      return;
+    }
+    setBriefingLoading(true);
+    try {
+      const res = await api.briefing();
+      setBriefing(res.briefing);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Briefing failed");
+    } finally {
+      setBriefingLoading(false);
+    }
+  };
+
   const aiOptions = [
     { label: "🤖 Auto (best available free)", opts: [{ val: "auto|auto", text: "Auto — try all providers" }] },
     { label: "⚡ Gemini — AI Studio", opts: [{ val: "gemini|gemini-3.1-flash-lite", text: "Gemini 3.1 Flash Lite" }, { val: "gemini|gemini-3.6-flash", text: "Gemini 3.6 Flash" }] },
@@ -129,13 +147,25 @@ export default function Dashboard() {
           <span className="font-bold text-lg text-stone-100 tracking-tight hidden sm:block">Masal AI</span>
         </Link>
 
-        {/* Centre: count pill */}
-        <div className="text-sm font-medium text-stone-400 bg-stone-900/50 px-4 py-1.5 rounded-full border border-stone-800">
-          {warming ? (
-            <span className="animate-pulse">Warming backend…</span>
-          ) : (
-            <span>Total Leads: <span className="text-stone-200">{leads.length}</span></span>
-          )}
+        {/* Centre: count pill + briefing btn */}
+        <div className="flex items-center gap-4">
+          <div className="text-sm font-medium text-stone-400 bg-stone-900/50 px-4 py-1.5 rounded-full border border-stone-800">
+            {warming ? (
+              <span className="animate-pulse">Warming backend…</span>
+            ) : (
+              <span>Total Leads: <span className="text-stone-200">{leads.length}</span></span>
+            )}
+          </div>
+          
+          <button
+            onClick={handleBriefing}
+            disabled={briefingLoading || warming}
+            className={`text-xs font-bold px-4 py-1.5 rounded-full border transition-all ${
+              briefing ? "bg-amber-900/40 border-amber-800 text-amber-300" : "bg-stone-900 border-stone-800 text-stone-300 hover:text-stone-100 hover:bg-stone-800"
+            }`}
+          >
+            {briefingLoading ? "Generating..." : briefing ? "Close Briefing" : "☀️ Morning Briefing"}
+          </button>
         </div>
 
         {/* Right: Custom AI Selector */}
@@ -177,6 +207,39 @@ export default function Dashboard() {
           )}
         </div>
       </header>
+
+      {/* ── Briefing Panel ── */}
+      {briefing && (
+        <div className="flex-shrink-0 bg-amber-950/20 border-b border-amber-900/40 p-6 shadow-inner">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-amber-400 font-bold text-sm tracking-widest uppercase mb-3 flex items-center gap-2">
+              <span>☀️</span> Morning Briefing
+            </h2>
+            <div className="text-stone-300 text-sm leading-relaxed max-w-4xl">
+              <ul className="list-disc pl-5 marker:text-amber-700/50 space-y-2">
+                {briefing.split('\n').map((line, i) => {
+                  if (!line.trim()) return null;
+                  const isBullet = line.trim().startsWith('* ') || line.trim().startsWith('- ');
+                  const content = line.replace(/^[\*\-]\s+/, '');
+                  
+                  const parts = content.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                      return <strong key={j} className="text-amber-100 font-bold">{part.slice(2, -2)}</strong>;
+                    }
+                    return part;
+                  });
+
+                  if (isBullet) {
+                    return <li key={i}>{parts}</li>;
+                  }
+                  // For the motivational line or non-bullet lines
+                  return <div key={i} className="mt-4 font-medium italic text-amber-200/80 -ml-5">{parts}</div>;
+                })}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Main Layout ── */}
       <div className="flex-1 flex overflow-hidden max-w-7xl mx-auto w-full p-6 gap-6">

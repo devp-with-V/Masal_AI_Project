@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from ai import analyze_lead, chat_with_lead, generate_action_kit
+from ai import analyze_lead, chat_with_lead, generate_action_kit, generate_briefing
 from schemas import ActionKit, ChatMsg, ChatReq, ChatRes, Lead, LeadIn
 
 load_dotenv()
@@ -222,6 +222,16 @@ def load_store():
     except Exception as e:
         print(f"Error loading store: {e}")
     return False
+
+@app.get("/api/briefing")
+def daily_briefing(request: Request):
+    provider_choice = request.headers.get("x-provider-select", "auto")
+    model_choice = request.headers.get("x-model-select", "auto")
+    try:
+        text = generate_briefing(list(STORE.values()), provider_choice, model_choice)
+    except Exception as e:
+        raise HTTPException(502, f"Briefing failed: {str(e)[:300]}")
+    return {"briefing": text}
 
 @app.on_event("startup")
 def load_seeds():

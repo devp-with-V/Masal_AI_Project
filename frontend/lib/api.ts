@@ -83,6 +83,7 @@ export const api = {
   kit: (id: string) => req<ActionKit>(`/api/leads/${id}/action-kit`, { method: "POST" }),
   close: (id: string, reason: string) => req<Lead>(`/api/leads/${id}/close`, { method: "POST", body: JSON.stringify({ reason }) }),
   reopen: (id: string, update: string) => req<Lead>(`/api/leads/${id}/reopen`, { method: "POST", body: JSON.stringify({ update }) }),
+  briefing: () => req<{ briefing: string }>("/api/briefing"),
 };
 
 const LS_KEY = "masal-leads-v1";

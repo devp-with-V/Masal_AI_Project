@@ -182,3 +182,34 @@ def generate_action_kit(lead: Lead, provider: str = "auto", model_choice: str = 
         follow_up_title=raw.get("follow_up_title", f"Follow up with {lead.name}"),
         due_date=due,
     )
+
+
+def generate_briefing(leads: list[Lead], provider: str = "auto", model_choice: str = "auto") -> str:
+    import json
+    active = [l for l in leads if not l.closed and l.analysis]
+    active.sort(key=lambda l: -(l.analysis.score if l.analysis else 0))
+    top = active[:5]
+    
+    if not top:
+        return "No active leads to review today. Time to prospect!"
+
+    leads_data = [
+        {
+            "name": l.name, 
+            "score": l.analysis.score, 
+            "tier": l.analysis.tier, 
+            "summary": l.analysis.summary, 
+            "next_action": l.analysis.next_action,
+            "urgency": l.analysis.urgency
+        } for l in top
+    ]
+
+    prompt = f"""You are a senior real-estate sales manager. Write a quick morning briefing for a salesperson.
+Format this strictly as a bulleted list (using Markdown * or -).
+Cover: who to call FIRST and why, key talking points for the most urgent leads, and any red flags to watch out for.
+Be highly specific — use their actual names, budgets, and timelines. End with a short motivational one-liner outside the bullets.
+
+TODAY'S ACTIVE LEADS (ranked by priority):
+{json.dumps(leads_data, indent=2)}"""
+    
+    return _generate(provider, model_choice, prompt, config={"temperature": 0.5}).strip()
