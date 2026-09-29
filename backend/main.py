@@ -85,6 +85,7 @@ def create_lead(data: LeadIn, request: Request):
         raise HTTPException(502, f"AI call failed: {str(e)[:300]}")
     lead = Lead.from_input(str(uuid.uuid4()), data, analysis)
     STORE[lead.id] = lead
+    save_store()
     return lead
 
 
@@ -119,6 +120,7 @@ def chat(lead_id: str, body: ChatReq, request: Request):
         raise HTTPException(502, f"AI call failed: {str(e)[:300]}")
     lead.chat_history.append(ChatMsg(role="user", text=body.question))
     lead.chat_history.append(ChatMsg(role="assistant", text=answer))
+    save_store()
     return ChatRes(answer=answer)
 
 
@@ -138,6 +140,7 @@ def action_kit(lead_id: str, request: Request):
     except Exception as e:
         raise HTTPException(502, f"AI call failed: {str(e)[:300]}")
     lead.action_kit = kit
+    save_store()
     return kit
 
 
@@ -151,6 +154,7 @@ def close_lead(lead_id: str, body: CloseReq):
         raise HTTPException(404, "Lead not found")
     STORE[lead_id].closed = True
     STORE[lead_id].close_reason = body.reason
+    save_store()
     return STORE[lead_id]
 
 
@@ -173,6 +177,7 @@ def reopen_lead(lead_id: str, body: ReopenReq, request: Request):
     # Construct a LeadIn object for the analyze_lead function
     lead_in = LeadIn(
         name=lead.name,
+        phone=lead.phone,
         location=lead.location,
         requirement=lead.requirement,
         budget=lead.budget,
@@ -193,16 +198,38 @@ def reopen_lead(lead_id: str, body: ReopenReq, request: Request):
     
     # Also invalidate the action kit so they have to generate a new one based on the new context
     lead.action_kit = None
-    
+    save_store()
     return lead
 
 
 
+STORE_FILE = Path(__file__).parent / "store.json"
+
+def save_store():
+    try:
+        data = {k: v.model_dump() for k, v in STORE.items()}
+        STORE_FILE.write_text(json.dumps(data))
+    except Exception as e:
+        print(f"Error saving store: {e}")
+
+def load_store():
+    try:
+        if STORE_FILE.exists():
+            data = json.loads(STORE_FILE.read_text())
+            for k, v in data.items():
+                STORE[k] = Lead(**v)
+            return True
+    except Exception as e:
+        print(f"Error loading store: {e}")
+    return False
+
 @app.on_event("startup")
 def load_seeds():
     """Load seeds instantly; analyze in background so boot never blocks."""
-    import threading
+    if load_store() and STORE:
+        return # Skip seeds if we have persisted data
 
+    import threading
     path = Path(__file__).parent / "seed_leads.json"
     try:
         raw = json.loads(path.read_text())
@@ -215,6 +242,7 @@ def load_seeds():
             continue
         lid = str(uuid.uuid4())
         STORE[lid] = Lead.from_input(lid, data, None)
+    save_store()
 
     def _analyze_all():
         ids = list(STORE.keys())
