@@ -203,8 +203,8 @@ export default function Dashboard() {
             {formOpen ? "✕ Close Form" : "+ New Lead"}
           </button>
 
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${formOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}>
-            <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md mb-6">
+          <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${formOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}>
+            <div className="bg-stone-900/80 border border-stone-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md mb-20">
               <h2 className="text-sm font-bold text-stone-200 mb-4">Add Lead Details</h2>
               <form onSubmit={submit} className="flex flex-col gap-4">
                 {(["name", "phone", "location", "requirement", "budget", "timeline"] as const).map((k) => (
