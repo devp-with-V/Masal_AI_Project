@@ -5,7 +5,7 @@ This project is an AI-powered lead scoring, ranking, and action planning tool bu
 The goal is simple: instead of manually reading and guessing which leads to call first, a salesperson inputs the customer inquiry and gets an instant 0-100 score, a priority tier, and actionable scripts to close the deal.
 
 🔗 **Live App:** [masal-ai-project.vercel.app](https://masal-ai-project.vercel.app/)  
-📹 **Demo Video:** [Link to your video here]
+📹 **Demo Video:** [Demo Video](https://drive.google.com/file/d/1sjcdIcWFwjQN5wGPEo4i06v-2f5DYV-P/view?usp=sharing)
 
 ## What I Built
 
